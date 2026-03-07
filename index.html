@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Solar%20KPI%20Manager%22%2C%22short_name%22%3A%22SolarKPI%22%2C%22description%22%3A%22Track%20solar%20installations%2C%20quotations%2C%20and%20profits%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%234CAF50%22%2C%22theme_color%22%3A%22%234CAF50%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2245%22%20fill%3D%22%23f9a825%22%2F%3E%3Ccircle%20cx%3D%2235%22%20cy%3D%2235%22%20r%3D%228%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M60%2060%20Q70%2050%2060%2040%22%20stroke%3D%22%23fff%22%20stroke-width%3D%225%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Ccircle%20cx%3D%22256%22%20cy%3D%22256%22%20r%3D%22230%22%20fill%3D%22%23f9a825%22%2F%3E%3Ccircle%20cx%3D%22180%22%20cy%3D%22180%22%20r%3D%2240%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M300%20300%20Q360%20250%20300%20200%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2225%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+    <!-- PWA Manifest - Fixed proper format -->
+    <link rel="manifest" href="manifest.json">
     
     <!-- Theme color for browser UI -->
     <meta name="theme-color" content="#4CAF50">
     
-    <!-- Apple-specific (optional but recommended) -->
+    <!-- Apple-specific for iOS home screen -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SolarKPI">
@@ -514,7 +514,7 @@
         }
         
         input, select, textarea {
-            font-size: 16px !important; /* Prevents zoom on iOS */
+            font-size: 16px !important;
         }
     </style>
 </head>
@@ -667,9 +667,56 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        // FIXED: Removed the extra 'L' at the end of the URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbwt_8-n9wK0yi3YVdstSzCDM3MK8EJXG_ejcvEld9HFCA1BSPmJYrzCD0x3EVHO6-uxuQ/exec';
         const CORRECT_PASSWORD = '1001';
+        
+        // ==================== PWA INSTALLATION ====================
+        // Create manifest.json dynamically
+        const manifest = {
+            name: "Solar KPI Manager",
+            short_name: "SolarKPI",
+            description: "Track solar installations, quotations, and profits",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#4CAF50",
+            theme_color: "#4CAF50",
+            icons: [
+                {
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='86' fill='%23f9a825'/%3E%3Ccircle cx='70' cy='70' r='16' fill='%23fff'/%3E%3Cpath d='M115 115 Q135 100 115 80' stroke='%23fff' stroke-width='10' fill='none'/%3E%3C/svg%3E",
+                    sizes: "192x192",
+                    type: "image/svg+xml"
+                }
+            ]
+        };
+        
+        // Inject manifest link if not present
+        if (!document.querySelector('link[rel="manifest"]')) {
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+            document.head.appendChild(manifestLink);
+        }
+        
+        // Simple service worker for offline capability
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    self.addEventListener('install', (event) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(fetch(event.request));
+                    });
+                `;
+                
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker error:', err));
+            });
+        }
         
         // ==================== HELPER FUNCTIONS ====================
         function formatCurrency(value) {
@@ -901,7 +948,7 @@
                 })
                 .catch((error) => {
                     console.error('Fetch error:', error);
-                    showToast('Failed to load records: ' + error.message, 'error');
+                    showToast('Failed to load records. Check console.', 'error');
                     document.getElementById('loading').style.display = 'none';
                 });
         }
@@ -1009,7 +1056,7 @@
                 })
                 .catch((error) => {
                     console.error('Save error:', error);
-                    showToast('Failed to save: ' + error.message, 'error');
+                    showToast('Failed to save', 'error');
                 })
                 .finally(() => {
                     isSubmitting = false;
@@ -1059,7 +1106,7 @@
             })
             .catch((error) => {
                 console.error('Delete error:', error);
-                showToast('Failed to delete: ' + error.message, 'error');
+                showToast('Failed to delete', 'error');
             });
         }
         
@@ -1085,34 +1132,6 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-        
-        // ==================== SERVICE WORKER REGISTRATION (for PWA) ====================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('data:text/javascript;charset=utf-8,' + encodeURIComponent(`
-                    const CACHE_NAME = 'solar-kpi-v1';
-                    const urlsToCache = [
-                        './',
-                    ];
-                    self.addEventListener('install', event => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then(cache => cache.addAll(urlsToCache))
-                        );
-                    });
-                    self.addEventListener('fetch', event => {
-                        event.respondWith(
-                            caches.match(event.request)
-                                .then(response => response || fetch(event.request))
-                        );
-                    });
-                `)).then(registration => {
-                    console.log('ServiceWorker registered');
-                }).catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-            });
         }
     </script>
 </body>
